@@ -133,7 +133,7 @@ class TestCollections:
         data = gen_list_data(default_nb)
         ids = collection.insert(data)
         assert len(ids) == default_nb
-        res = collection.get(ids[0:10])
+        res = collection.get(ids[:10])
 
     @pytest.mark.xfail
     def test_query(self, collection):
@@ -141,7 +141,7 @@ class TestCollections:
         ids = collection.insert(data)
         assert len(ids) == default_nb
         ids_expr = ",".join(str(x) for x in ids)
-        expr = "id in [ " + ids_expr + " ]"
+        expr = f"id in [ {ids_expr} ]"
         res = collection.query(expr)
 
     @pytest.mark.xfail

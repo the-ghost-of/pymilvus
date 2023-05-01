@@ -77,14 +77,12 @@ def create_existing_collection(uri, collection_name):
     ]
     schema = CollectionSchema(fields)
 
-    ret = {
+    return {
         "col": Collection(collection_name, schema, using=alias),
         "fields": ["float_vector", "int", "float", "varchar"],
         "primary_field": "int",
         "vector_field": "float_vector",
     }
-
-    return ret
 
 
 class TestMilvusClient:

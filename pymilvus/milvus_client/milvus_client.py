@@ -89,9 +89,7 @@ class MilvusClient:
         self.fields = None
 
         self.alias = self._create_connection()
-        self.is_self_hosted = bool(
-            utility.get_server_type(using=self.alias) == "milvus"
-        )
+        self.is_self_hosted = utility.get_server_type(using=self.alias) == "milvus"
         if overwrite and utility.has_collection(self.collection_name, using=self.alias):
             utility.drop_collection(self.collection_name, using=self.alias)
 
@@ -143,7 +141,7 @@ class MilvusClient:
             List[Union[str, int]]: A list of primary keys that were inserted.
         """
         # If no data provided, we cannot input anything
-        if len(data) == 0:
+        if not data:
             return []
 
         if batch_size < 1:
@@ -232,15 +230,13 @@ class MilvusClient:
             pks = [x[self.pk_field] for x in data]
             self.delete_by_pk(pks, timeout)
 
-        ret = self.insert_data(
+        return self.insert_data(
             data=data,
             timeout=timeout,
             batch_size=batch_size,
             partition=partition,
             progress_bar=progress_bar,
         )
-
-        return ret
 
     def search_data(
         self,
@@ -292,7 +288,7 @@ class MilvusClient:
 
         if not isinstance(data[0], list):
             data = [data]
-        if return_fields is None or len(return_fields) == 0:
+        if return_fields is None or not return_fields:
             return_fields = list(self.fields.keys())
             return_fields.remove(self.vector_field)
 
@@ -358,22 +354,16 @@ class MilvusClient:
                 "Missing collection. Make sure data inserted or intialized on existing collection."
             )
 
-        if return_fields is None or len(return_fields) == 0:
+        if return_fields is None or not return_fields:
             return_fields = list(self.fields.keys())
             return_fields.remove(self.vector_field)
 
-        res = self.collection.query(
+        return self.collection.query(
             expr=filter_expression,
             partition_names=partitions,
             output_fields=return_fields,
             timeout=timeout or self.timeout,
         )
-
-        # TODO: Figure out thread safety
-        # with self.concurrent_lock:
-        #     self.concurrent_counter -= 1
-
-        return res
 
     def get_vectors_by_pk(
         self,
@@ -415,23 +405,15 @@ class MilvusClient:
 
         # Varchar pks need double quotes around the values
         if self.fields[self.pk_field] == DataType.VARCHAR:
-            ids = ['"' + str(entry) + '"' for entry in pks]
-            expr = f"""{self.pk_field} in [{','.join(ids)}]"""
+            ids = [f'"{str(entry)}"' for entry in pks]
         else:
             ids = [str(entry) for entry in pks]
-            expr = f"{self.pk_field} in [{','.join(ids)}]"
-
-        res = self.collection.query(
+        expr = f"""{self.pk_field} in [{','.join(ids)}]"""
+        return self.collection.query(
             expr=expr,
             output_fields=[self.vector_field],
             timeout=timeout or self.timeout,
         )
-
-        # TODO: Figure out thread safety
-        # with self.concurrent_lock:
-        #     self.concurrent_counter -= 1
-
-        return res
 
     def delete_by_pk(
         self,
@@ -465,12 +447,10 @@ class MilvusClient:
             return
 
         if self.fields[self.pk_field] == DataType.VARCHAR:
-            ids = ['"' + str(entry) + '"' for entry in pks]
-            expr = f"""{self.pk_field} in [{','.join(ids)}]"""
+            ids = [f'"{str(entry)}"' for entry in pks]
         else:
             ids = [str(entry) for entry in pks]
-            expr = f"{self.pk_field} in [{','.join(ids)}]"
-
+        expr = f"""{self.pk_field} in [{','.join(ids)}]"""
         self.collection.delete(expr=expr, timout=timeout or self.timeout)
 
         # TODO: Figure out thread safety
@@ -495,9 +475,7 @@ class MilvusClient:
             current_partitions = {
                 partition.name for partition in self.collection.partitions
             }
-            new_partitions = input_partitions.difference(current_partitions)
-            # If partitions need to be added, add them
-            if len(new_partitions) != 0:
+            if new_partitions := input_partitions.difference(current_partitions):
                 # TODO: Remove with Milvus 2.3
                 # Try to unload the collection
                 self.collection.release()
@@ -507,7 +485,7 @@ class MilvusClient:
                     logger.debug(
                         "Successfully added partitions to collection: %s partitions: %s",
                         self.collection_name,
-                        ",".join(part for part in list(new_partitions)),
+                        ",".join(list(new_partitions)),
                     )
                     # TODO: Remove with Milvus 2.3
                     self._load()
@@ -541,41 +519,42 @@ class MilvusClient:
         Raises:
             MilvusException: Unable to remove the partition.
         """
-        if self.collection is not None and self.is_self_hosted:
-            # Calculate which partitions need to be removed
-            remove_partitions = set(remove_partitions)
-            current_partitions = {
-                partition.name for partition in self.collection.partitions
-            }
-            removal_partitions = remove_partitions.intersection(current_partitions)
-            # If partitions need to be added, add them
-            if len(removal_partitions) != 0:
-                # TODO: Remove with Milvus 2.3
-                # Try to unload the collection
-                self.collection.release()
-                try:
-                    for part in removal_partitions:
-                        self.collection.drop_partition(part)
-                    logger.debug(
-                        "Successfully deleted partitions from collection: %s partitions: %s",
-                        self.collection_name,
-                        ",".join(part for part in list(removal_partitions)),
-                    )
-                    # TODO: Remove with Milvus 2.3
-                    self._load()
-                except MilvusException as ex:
-                    logger.debug(
-                        "Failed to delete partitions from: %s", self.collection_name
-                    )
-                    # TODO: Remove with Milvus 2.3
-                    # Even if failed, attempt to reload collection
-                    self._load()
-                    raise ex
-            else:
+        if self.collection is None or not self.is_self_hosted:
+            return
+        # Calculate which partitions need to be removed
+        remove_partitions = set(remove_partitions)
+        current_partitions = {
+            partition.name for partition in self.collection.partitions
+        }
+        if removal_partitions := remove_partitions.intersection(
+            current_partitions
+        ):
+            # TODO: Remove with Milvus 2.3
+            # Try to unload the collection
+            self.collection.release()
+            try:
+                for part in removal_partitions:
+                    self.collection.drop_partition(part)
                 logger.debug(
-                    "No parititons to delete for collection: %s",
+                    "Successfully deleted partitions from collection: %s partitions: %s",
                     self.collection_name,
+                    ",".join(list(removal_partitions)),
                 )
+                # TODO: Remove with Milvus 2.3
+                self._load()
+            except MilvusException as ex:
+                logger.debug(
+                    "Failed to delete partitions from: %s", self.collection_name
+                )
+                # TODO: Remove with Milvus 2.3
+                # Even if failed, attempt to reload collection
+                self._load()
+                raise ex
+        else:
+            logger.debug(
+                "No parititons to delete for collection: %s",
+                self.collection_name,
+            )
 
     def delete_collection(self):
         """Delete the collection stored in this object"""
@@ -678,7 +657,7 @@ class MilvusClient:
         # If pk not provided, created autoid pk
         if self.pk_field is None:
             # Generate a unique auto-id field
-            self.pk_field = "internal_pk_" + uuid4().hex[:4]
+            self.pk_field = f"internal_pk_{uuid4().hex[:4]}"
             # Create a new field for pk
             fields[self.pk_field] = {}
             fields[self.pk_field]["name"] = self.pk_field
@@ -689,7 +668,6 @@ class MilvusClient:
                 "Missing pk_field, creating auto-id pk for collection: %s",
                 self.collection_name,
             )
-        # If pk_field given, we assume it will be provided for all inputs
         else:
             try:
                 fields[self.pk_field]["auto_id"] = False
@@ -742,10 +720,7 @@ class MilvusClient:
                 raise ValueError(f"Unrecognized datatype for {key}.")
 
             # Create an entry under the field name
-            fields[key] = {}
-            fields[key]["name"] = key
-            fields[key]["dtype"] = dtype
-
+            fields[key] = {"name": key, "dtype": dtype}
             # Area for attaching kwargs for certain datatypes
             if dtype == DataType.VARCHAR:
                 fields[key]["max_length"] = 65_535
@@ -817,10 +792,14 @@ class MilvusClient:
 
     def _get_index(self):
         """Return the index dict if index exists."""
-        for index in self.collection.indexes:
-            if index.field_name == self.vector_field:
-                return index
-        return None
+        return next(
+            (
+                index
+                for index in self.collection.indexes
+                if index.field_name == self.vector_field
+            ),
+            None,
+        )
 
     def _create_default_search_params(self) -> None:
         """Generate search params based on the current index type"""
@@ -833,37 +812,38 @@ class MilvusClient:
 
     def _load(self):
         """Loads the collection."""
-        if self._get_index() is not None:
-            if self.is_self_hosted:
+        if self._get_index() is None:
+            return
+        if self.is_self_hosted:
+            try:
+                self.collection.load(replica_number=self.replica_number)
+                logger.debug(
+                    "Collection loaded: %s",
+                    self.collection_name,
+                )
+            # If the replica count is incorrect, release the collection
+            except MilvusException:
                 try:
+                    self.collection.release(timeout=self.timeout)
                     self.collection.load(replica_number=self.replica_number)
                     logger.debug(
-                        "Collection loaded: %s",
+                        "Successfully reloaded collection: %s",
                         self.collection_name,
                     )
-                # If the replica count is incorrect, release the collection
-                except MilvusException:
-                    try:
-                        self.collection.release(timeout=self.timeout)
-                        self.collection.load(replica_number=self.replica_number)
-                        logger.debug(
-                            "Successfully reloaded collection: %s",
-                            self.collection_name,
-                        )
-                    except MilvusException as ex:
-                        logger.error(
-                            "Failed to load collection: %s",
-                            self.collection_name,
-                        )
-                        raise ex
-            else:
-                try:
-                    self.collection.load(replica_number=1)
-                    logger.debug(
-                        "Collection loaded: %s",
-                        self.collection_name,
-                    )
-                # If both loads fail, raise exception
                 except MilvusException as ex:
-                    logger.error("Failed to load collection: %s", self.collection_name)
+                    logger.error(
+                        "Failed to load collection: %s",
+                        self.collection_name,
+                    )
                     raise ex
+        else:
+            try:
+                self.collection.load(replica_number=1)
+                logger.debug(
+                    "Collection loaded: %s",
+                    self.collection_name,
+                )
+            # If both loads fail, raise exception
+            except MilvusException as ex:
+                logger.error("Failed to load collection: %s", self.collection_name)
+                raise ex

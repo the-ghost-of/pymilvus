@@ -55,8 +55,8 @@ def create_connection():
             connections.connect(host=_HOST, port=_PORT)
             retry = False
         except Exception as e:
-            print("Cannot connect to Milvus. Error: " + str(e))
-            print(f"Cannot connect to Milvus. Trying to connect Again. Sleeping for: 1")
+            print(f"Cannot connect to Milvus. Error: {str(e)}")
+            print("Cannot connect to Milvus. Trying to connect Again. Sleeping for: 1")
             time.sleep(1)
 
     print(f"\nList connections:")
@@ -146,7 +146,7 @@ def bulk_insert_rowbased(row_count_each_file, file_count, tag, partition_name = 
 
     task_ids = []
     for i in range(file_count):
-        file_path = FILES_PATH + "rows_" + str(i) + ".json"
+        file_path = f"{FILES_PATH}rows_{str(i)}.json"
         print("Generate row-based file:", file_path)
         gen_json_rowbased(row_count_each_file, file_path, tag)
         print("Import row-based file:", file_path)
@@ -166,7 +166,10 @@ def wait_tasks_to_state(task_ids, state_code):
         temp_ids = []
         for id in wait_ids:
             state = utility.get_bulk_insert_state(task_id=id)
-            if state.state == BulkInsertState.ImportFailed or state.state == BulkInsertState.ImportFailedAndCleaned:
+            if state.state in [
+                BulkInsertState.ImportFailed,
+                BulkInsertState.ImportFailedAndCleaned,
+            ]:
                 print(state)
                 print("The task", state.task_id, "failed, reason:", state.failed_reason)
                 continue
@@ -178,7 +181,7 @@ def wait_tasks_to_state(task_ids, state_code):
             temp_ids.append(id)
 
         wait_ids = temp_ids
-        if len(wait_ids) == 0:
+        if not wait_ids:
             break;
         print(len(wait_ids), "tasks not reach state:", BulkInsertState.state_2_name.get(state_code, "unknown"), ", next round check")
 
@@ -193,11 +196,14 @@ def wait_tasks_persisted(task_ids):
     states = wait_tasks_to_state(task_ids, BulkInsertState.ImportPersisted)
     persist_count = 0
     for state in states:
-        if state.state == BulkInsertState.ImportPersisted or state.state == BulkInsertState.ImportCompleted:
+        if state.state in [
+            BulkInsertState.ImportPersisted,
+            BulkInsertState.ImportCompleted,
+        ]:
             persist_count = persist_count + 1
-        # print(state)
-        # if you want to get the auto-generated primary keys, use state.ids to fetch
-        # print("Auto-generated ids:", state.ids)
+            # print(state)
+            # if you want to get the auto-generated primary keys, use state.ids to fetch
+            # print("Auto-generated ids:", state.ids)
 
     print(persist_count, "of", len(task_ids), " tasks have successfully parsed all data files and data already persisted")
     print("=========================================================================================================\n")
@@ -206,9 +212,7 @@ def wait_tasks_persisted(task_ids):
 # Get bulk insert task state to check whether the data file has been indexed successfully.
 # If the state of bulk insert task is BulkInsertState.ImportCompleted, that means the data is queryable.
 def wait_tasks_competed(tasks):
-    task_ids = []
-    for task in tasks:
-        task_ids.append(task.task_id)
+    task_ids = [task.task_id for task in tasks]
     print("=========================================================================================================")
     states = wait_tasks_to_state(task_ids, BulkInsertState.ImportCompleted)
     complete_count = 0
@@ -300,17 +304,15 @@ def search(collection, vector_field, search_vector, consistency_level = "Eventua
 def delete(collection, ids):
     print("=========================================================================================================\n")
     print("Delete these entities:", ids)
-    expr = _ID_FIELD_NAME + " in " + str(ids)
+    expr = f"{_ID_FIELD_NAME} in {str(ids)}"
     collection.delete(expr=expr)
     print("=========================================================================================================\n")
 
 # retrieve entities
 def retrieve(collection, ids):
     print("Retrieve these entities:", ids)
-    expr = _ID_FIELD_NAME + " in " + str(ids)
-    result = collection.query(expr=expr, output_fields=[_VECTOR_FIELD_NAME])
-    # the result is like [{'id_field': 0, 'float_vector_field': [...]}, {'id_field': 1, 'float_vector_field': [...]}]
-    return result
+    expr = f"{_ID_FIELD_NAME} in {str(ids)}"
+    return collection.query(expr=expr, output_fields=[_VECTOR_FIELD_NAME])
 
 def main():
     # create a connection

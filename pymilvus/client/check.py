@@ -19,20 +19,11 @@ def is_legal_address(addr: Any) -> bool:
     if len(a) != 2:
         return False
 
-    if not is_legal_host(a[0]) or not is_legal_port(a[1]):
-        return False
-
-    return True
+    return bool(is_legal_host(a[0]) and is_legal_port(a[1]))
 
 
 def is_legal_host(host: Any) -> bool:
-    if not isinstance(host, str):
-        return False
-
-    if len(host) == 0:
-        return False
-
-    return True
+    return len(host) != 0 if isinstance(host, str) else False
 
 
 def is_legal_port(port: Any) -> bool:
@@ -47,36 +38,19 @@ def is_legal_port(port: Any) -> bool:
 
 
 def is_legal_vector(array: Any) -> bool:
-    if not array or \
-            not isinstance(array, list) or \
-            len(array) == 0:
-        return False
-
-    # for v in array:
-    #     if not isinstance(v, float):
-    #         return False
-
-    return True
+    return bool(array and isinstance(array, list) and len(array) != 0)
 
 
 def is_legal_bin_vector(array: Any) -> bool:
-    if not array or \
-            not isinstance(array, bytes) or \
-            len(array) == 0:
-        return False
-
-    return True
+    return bool(array and isinstance(array, bytes) and len(array) != 0)
 
 
 def is_legal_numpy_array(array: Any) -> bool:
-    return not (array is None or array.size == 0)
+    return array is not None and array.size != 0
 
 
 def int_or_str(item: Union[int, str]) -> str:
-    if isinstance(item, int):
-        return str(item)
-
-    return item
+    return str(item) if isinstance(item, int) else item
 
 
 def is_correct_date_str(param: str) -> bool:
@@ -155,10 +129,7 @@ def parser_range_date(date: Union[str, datetime.date]) -> str:
 def is_legal_date_range(start: str, end: str) -> bool:
     start_date = datetime.datetime.strptime(start, "%Y-%m-%d")
     end_date = datetime.datetime.strptime(end, "%Y-%m-%d")
-    if (end_date - start_date).days < 0:
-        return False
-
-    return True
+    return (end_date - start_date).days >= 0
 
 
 def is_legal_partition_name(tag: Any) -> bool:
@@ -175,72 +146,68 @@ def is_legal_anns_field(field: Any) -> bool:
 
 def is_legal_search_data(data: Any) -> bool:
     import numpy as np
-    if not isinstance(data, (list, np.ndarray)):
-        return False
-
-    for vector in data:
-        # list -> float vector
-        # bytes -> byte vector
-        if not isinstance(vector, (list, bytes, np.ndarray)):
-            return False
-
-    return True
+    return (
+        all(isinstance(vector, (list, bytes, np.ndarray)) for vector in data)
+        if isinstance(data, (list, np.ndarray))
+        else False
+    )
 
 
 def is_legal_output_fields(output_fields: Any) -> bool:
     if output_fields is None:
         return True
 
-    if not isinstance(output_fields, list):
-        return False
-
-    for field in output_fields:
-        if not is_legal_field_name(field):
-            return False
-
-    return True
+    return (
+        all(is_legal_field_name(field) for field in output_fields)
+        if isinstance(output_fields, list)
+        else False
+    )
 
 
 def is_legal_partition_name_array(tag_array: Any) -> bool:
     if tag_array is None:
         return True
 
-    if not isinstance(tag_array, list):
-        return False
-
-    for tag in tag_array:
-        if not is_legal_partition_name(tag):
-            return False
-
-    return True
+    return (
+        all(is_legal_partition_name(tag) for tag in tag_array)
+        if isinstance(tag_array, list)
+        else False
+    )
 
 def is_legal_replica_number(replica_number: int) -> bool:
     return isinstance(replica_number, int)
 
 # https://milvus.io/cn/docs/v1.0.0/metric.md#floating
 def is_legal_index_metric_type(index_type: str, metric_type: str) -> bool:
-    if index_type not in ("GPU_IVF_FLAT",
-                          "GPU_IVF_PQ",
-                          "FLAT",
-                          "IVF_FLAT",
-                          "IVF_SQ8",
-                          "IVF_PQ",
-                          "HNSW",
-                          "AUTOINDEX",
-                          "DISKANN"):
+    if index_type in {
+        "GPU_IVF_FLAT",
+        "GPU_IVF_PQ",
+        "FLAT",
+        "IVF_FLAT",
+        "IVF_SQ8",
+        "IVF_PQ",
+        "HNSW",
+        "AUTOINDEX",
+        "DISKANN",
+    }:
+        return metric_type in {"L2", "IP", "COSINE"}
+    else:
         return False
-    if metric_type not in ("L2", "IP", "COSINE"):
-        return False
-    return True
 
 
 # https://milvus.io/cn/docs/v1.0.0/metric.md#binary
 def is_legal_binary_index_metric_type(index_type: str, metric_type: str) -> bool:
     if index_type == "BIN_FLAT":
-        if metric_type in ("JACCARD", "TANIMOTO", "HAMMING", "SUBSTRUCTURE", "SUPERSTRUCTURE"):
+        if metric_type in {
+            "JACCARD",
+            "TANIMOTO",
+            "HAMMING",
+            "SUBSTRUCTURE",
+            "SUPERSTRUCTURE",
+        }:
             return True
     elif index_type == "BIN_IVF_FLAT":
-        if metric_type in ("JACCARD", "TANIMOTO", "HAMMING"):
+        if metric_type in {"JACCARD", "TANIMOTO", "HAMMING"}:
             return True
     return False
 
@@ -344,11 +311,10 @@ class ParamChecker(metaclass=Singleton):
         }
 
     def check(self, key, value):
-        if key in self.check_dict:
-            if not self.check_dict[key](value):
-                _raise_param_error(key, value)
-        else:
+        if key not in self.check_dict:
             raise ParamError(message=f"unknown param `{key}`")
+        if not self.check_dict[key](value):
+            _raise_param_error(key, value)
 
 def _get_param_checker():
     return ParamChecker()
@@ -386,6 +352,5 @@ def check_index_params(params):
     if params['index_type'] in valid_binary_index_types:
         if not is_legal_binary_index_metric_type(params['index_type'], params['metric_type']):
             raise ParamError(message=f"Invalid metric_type: {params['metric_type']}, which does not match the index type: {params['index_type']}")
-    else:
-        if not is_legal_index_metric_type(params['index_type'], params['metric_type']):
-            raise ParamError(message=f"Invalid metric_type: {params['metric_type']}, which does not match the index type: {params['index_type']}")
+    elif not is_legal_index_metric_type(params['index_type'], params['metric_type']):
+        raise ParamError(message=f"Invalid metric_type: {params['metric_type']}, which does not match the index type: {params['index_type']}")

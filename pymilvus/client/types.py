@@ -169,9 +169,7 @@ class State(IntEnum):
     def new(s: int):
         if s == State.Executing:
             return State.Executing
-        if s == State.Completed:
-            return State.Completed
-        return State.UndefiedState
+        return State.Completed if s == State.Completed else State.UndefiedState
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: {self._name_}>"
@@ -265,13 +263,11 @@ def cmp_consistency_level(l1, l2):
         except ValueError:
             return False
 
-    if isinstance(l1, int):
-        if l1 not in ConsistencyLevel.values():
-            return False
+    if isinstance(l1, int) and l1 not in ConsistencyLevel.values():
+        return False
 
-    if isinstance(l2, int):
-        if l2 not in ConsistencyLevel.values():
-            return False
+    if isinstance(l2, int) and l2 not in ConsistencyLevel.values():
+        return False
 
     return l1 == l2
 
@@ -320,8 +316,7 @@ class Group:
         self._num_outbound_node = num_outbound_node
 
     def __repr__(self) -> str:
-        s = f"Group: <group_id:{self.id}>, <group_nodes:{self.group_nodes}>, <shards:{self.shards}>, <resource_group: {self.resource_group}>, <num_outbound_node: {self.num_outbound_node}>"
-        return s
+        return f"Group: <group_id:{self.id}>, <group_nodes:{self.group_nodes}>, <shards:{self.shards}>, <resource_group: {self.resource_group}>, <num_outbound_node: {self.num_outbound_node}>"
 
     @property
     def id(self):
@@ -481,12 +476,10 @@ class BulkInsertState:
             raise AutoIDException(message=ExceptionsMessage.AutoIDIllegalRanges)
 
         ids = []
-        for i in range(int(len(self._id_ranges) / 2)):
+        for i in range(len(self._id_ranges) // 2):
             begin = self._id_ranges[i * 2]
             end = self._id_ranges[i * 2 + 1] + 1
-            for j in range(begin, end):
-                ids.append(j)
-
+            ids.extend(iter(range(begin, end)))
         return ids
 
     @property
@@ -541,10 +534,7 @@ class GrantItem:
         self._privilege = entity.grantor.privilege.name
 
     def __repr__(self) -> str:
-        s = f"GrantItem: <object:{self.object}>, <object_name:{self.object_name}>, " \
-            f"<role_name:{self.role_name}>, <grantor_name:{self.grantor_name}>, " \
-            f"<privilege:{self.privilege}>"
-        return s
+        return f"GrantItem: <object:{self.object}>, <object_name:{self.object_name}>, <role_name:{self.role_name}>, <grantor_name:{self.grantor_name}>, <privilege:{self.privilege}>"
 
     @property
     def object(self):
@@ -575,11 +565,11 @@ class GrantInfo:
     """
 
     def __init__(self, entities):
-        groups = []
-        for entity in entities:
-            if isinstance(entity, milvus_types.GrantEntity):
-                groups.append(GrantItem(entity))
-
+        groups = [
+            GrantItem(entity)
+            for entity in entities
+            if isinstance(entity, milvus_types.GrantEntity)
+        ]
         self._groups = groups
 
     def __repr__(self) -> str:
@@ -596,15 +586,15 @@ class GrantInfo:
 class UserItem:
     def __init__(self, username, entities):
         self._username = username
-        roles = []
-        for entity in entities:
-            if isinstance(entity, milvus_types.RoleEntity):
-                roles.append(entity.name)
+        roles = [
+            entity.name
+            for entity in entities
+            if isinstance(entity, milvus_types.RoleEntity)
+        ]
         self._roles = tuple(roles)
 
     def __repr__(self) -> str:
-        s = f"UserItem: <username:{self.username}>, <roles:{self.roles}>"
-        return s
+        return f"UserItem: <username:{self.username}>, <roles:{self.roles}>"
 
     @property
     def username(self):
@@ -622,11 +612,11 @@ class UserInfo:
     """
 
     def __init__(self, results):
-        groups = []
-        for result in results:
-            if isinstance(result, milvus_types.UserResult):
-                groups.append(UserItem(result.user.name, result.roles))
-
+        groups = [
+            UserItem(result.user.name, result.roles)
+            for result in results
+            if isinstance(result, milvus_types.UserResult)
+        ]
         self._groups = groups
 
     def __repr__(self) -> str:
@@ -643,15 +633,15 @@ class UserInfo:
 class RoleItem:
     def __init__(self, role_name, entities):
         self._role_name = role_name
-        users = []
-        for entity in entities:
-            if isinstance(entity, milvus_types.UserEntity):
-                users.append(entity.name)
+        users = [
+            entity.name
+            for entity in entities
+            if isinstance(entity, milvus_types.UserEntity)
+        ]
         self._users = tuple(users)
 
     def __repr__(self) -> str:
-        s = f"RoleItem: <role_name:{self.role_name}>, <users:{self.users}>"
-        return s
+        return f"RoleItem: <role_name:{self.role_name}>, <users:{self.users}>"
 
     @property
     def role_name(self):
@@ -669,11 +659,11 @@ class RoleInfo:
     """
 
     def __init__(self, results):
-        groups = []
-        for result in results:
-            if isinstance(result, milvus_types.RoleResult):
-                groups.append(RoleItem(result.role.name, result.users))
-
+        groups = [
+            RoleItem(result.role.name, result.users)
+            for result in results
+            if isinstance(result, milvus_types.RoleResult)
+        ]
         self._groups = groups
 
     def __repr__(self) -> str:
@@ -697,14 +687,13 @@ class ResourceGroupInfo:
         self._num_incoming_node = resource_group.num_incoming_node
 
     def __repr__(self) -> str:
-        s = f"""ResourceGroupInfo:
+        return f"""ResourceGroupInfo:
 <name:{self.name}>,
 <capacity:{self.capacity}>,
 <num_available_node:{self.num_available_node}>,
 <num_loaded_replica:{self.num_loaded_replica}>,
 <num_outgoing_node:{self.num_outgoing_node}>,
 <num_incoming_node:{self.num_incoming_node}>"""
-        return s
 
 
     @property

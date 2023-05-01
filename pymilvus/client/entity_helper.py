@@ -31,8 +31,7 @@ def check_str_arr(str_arr, max_len):
 def entity_to_str_arr(entity, field_info, check=True):
     arr = []
     if Config.EncodeProtocol.lower() != 'utf-8'.lower():
-        for s in entity.get("values"):
-            arr.append(s.encode(Config.EncodeProtocol))
+        arr.extend(s.encode(Config.EncodeProtocol) for s in entity.get("values"))
     else:
         arr = entity.get("values")
     max_len = int(get_max_len_of_var_char(field_info))

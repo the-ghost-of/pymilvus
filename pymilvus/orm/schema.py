@@ -81,8 +81,7 @@ class CollectionSchema:
         }
         r = ["{\n"]
         s = "  {}: {}\n"
-        for k, v in _dict.items():
-            r.append(s.format(k, v))
+        r.extend(s.format(k, v) for k, v in _dict.items())
         r.append("}")
         return "".join(r)
 
@@ -158,12 +157,11 @@ class CollectionSchema:
         return self._auto_id
 
     def to_dict(self):
-        _dict = {
+        return {
             "auto_id": self.auto_id,
             "description": self._description,
             "fields": [s.to_dict() for s in self._fields],
         }
-        return _dict
 
 
 class FieldSchema:
@@ -194,8 +192,7 @@ class FieldSchema:
     def __repr__(self):
         r = ["{\n"]
         s = "    {}: {}\n"
-        for k, v in self.to_dict().items():
-            r.append(s.format(k, v))
+        r.extend(s.format(k, v) for k, v in self.to_dict().items())
         r.append("  }")
         return "".join(r)
 
@@ -210,18 +207,16 @@ class FieldSchema:
             return
         if not self._kwargs:
             return
-        # currently only support ndim
-        if self._kwargs:
-            for k in COMMON_TYPE_PARAMS:
-                if k in self._kwargs:
-                    if self._type_params is None:
-                        self._type_params = {}
-                    self._type_params[k] = self._kwargs[k]
+        for k in COMMON_TYPE_PARAMS:
+            if k in self._kwargs:
+                if self._type_params is None:
+                    self._type_params = {}
+                self._type_params[k] = self._kwargs[k]
 
     @classmethod
     def construct_from_dict(cls, raw):
         kwargs = {}
-        kwargs.update(raw.get("params", {}))
+        kwargs |= raw.get("params", {})
         kwargs['is_primary'] = raw.get("is_primary", False)
         if raw.get("auto_id", None) is not None:
             kwargs['auto_id'] = raw.get("auto_id", None)
@@ -246,9 +241,11 @@ class FieldSchema:
         return None
 
     def __eq__(self, other):
-        if not isinstance(other, FieldSchema):
-            return False
-        return self.to_dict() == other.to_dict()
+        return (
+            self.to_dict() == other.to_dict()
+            if isinstance(other, FieldSchema)
+            else False
+        )
 
     @property
     def description(self):
@@ -305,14 +302,15 @@ def check_insert_or_upsert_data_schema(schema: CollectionSchema, data: Union[Lis
     if schema is None:
         raise SchemaNotReadyException(message="Schema shouldn't be None")
     if schema.auto_id:
-        if isInsert:
-            if isinstance(data, pandas.DataFrame):
-                if schema.primary_field.name in data:
-                    if not data[schema.primary_field.name].isnull().all():
-                        raise DataNotMatchException(message=f"Please don't provide data for auto_id primary field: {schema.primary_field.name}")
-                    data = data.drop(schema.primary_field.name, axis=1)
-        else:
+        if not isInsert:
             raise UpsertAutoIDTrueException(message=ExceptionsMessage.UpsertAutoIDTrue)
+        if (
+            isinstance(data, pandas.DataFrame)
+            and schema.primary_field.name in data
+        ):
+            if not data[schema.primary_field.name].isnull().all():
+                raise DataNotMatchException(message=f"Please don't provide data for auto_id primary field: {schema.primary_field.name}")
+            data = data.drop(schema.primary_field.name, axis=1)
     infer_fields = parse_fields_from_data(data)
     tmp_fields = copy.deepcopy(schema.fields)
 
@@ -344,8 +342,7 @@ def parse_fields_from_data(data: Union[List[List], pandas.DataFrame]) -> List[Fi
         if not is_list_like(d):
             raise DataTypeNotSupportException(message="data should be a list of list")
 
-    fields = [FieldSchema("", infer_dtype_bydata(d[0])) for d in data]
-    return fields
+    return [FieldSchema("", infer_dtype_bydata(d[0])) for d in data]
 
 
 def parse_fields_from_dataframe(df: pandas.DataFrame) -> List[FieldSchema]:
@@ -363,11 +360,11 @@ def parse_fields_from_dataframe(df: pandas.DataFrame) -> List[FieldSchema]:
             if dtype == DataType.UNKNOWN:
                 new_dtype = infer_dtype_bydata(values[i])
                 if new_dtype in (DataType.BINARY_VECTOR, DataType.FLOAT_VECTOR):
-                    vector_type_params = {}
-                    if new_dtype == DataType.BINARY_VECTOR:
-                        vector_type_params['dim'] = len(values[i]) * 8
-                    else:
-                        vector_type_params['dim'] = len(values[i])
+                    vector_type_params = {
+                        'dim': len(values[i]) * 8
+                        if new_dtype == DataType.BINARY_VECTOR
+                        else len(values[i])
+                    }
                     column_params_map[col_names[i]] = vector_type_params
                 data_types[i] = new_dtype
 
@@ -388,9 +385,10 @@ def check_schema(schema):
         raise SchemaNotReadyException(message=ExceptionsMessage.NoSchema)
     if len(schema.fields) < 1:
         raise SchemaNotReadyException(message=ExceptionsMessage.EmptySchema)
-    vector_fields = []
-    for field in schema.fields:
-        if field.dtype in (DataType.FLOAT_VECTOR, DataType.BINARY_VECTOR):
-            vector_fields.append(field.name)
-    if len(vector_fields) < 1:
+    vector_fields = [
+        field.name
+        for field in schema.fields
+        if field.dtype in (DataType.FLOAT_VECTOR, DataType.BINARY_VECTOR)
+    ]
+    if not vector_fields:
         raise SchemaNotReadyException(message=ExceptionsMessage.NoVector)

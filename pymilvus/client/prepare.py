@@ -323,10 +323,10 @@ class Prepare:
                 if len(vectors[i]) * 8 != dimension:
                     raise ParamError(message=f"The dimension of query entities[{vectors[i]*8}] is different from schema [{dimension}]")
                 pl.values.append(blob.vectorBinaryToBytes(vectors[i]))
-            else:
-                if len(vectors[i]) != dimension:
-                    raise ParamError(message=f"The dimension of query entities[{vectors[i]}] is different from schema [{dimension}]")
+            elif len(vectors[i]) == dimension:
                 pl.values.append(blob.vectorFloatToBytes(vectors[i]))
+            else:
+                raise ParamError(message=f"The dimension of query entities[{vectors[i]}] is different from schema [{dimension}]")
         return pl
 
     @classmethod
@@ -360,7 +360,7 @@ class Prepare:
             if isinstance(param, dict):
                 if "vector" in param:
                     # TODO: Here may not replace ph
-                    ph = "$" + str(len(placeholders))
+                    ph = f"${len(placeholders)}"
 
                     for pk, pv in param["vector"].items():
                         if "query" not in pv:
@@ -449,9 +449,7 @@ class Prepare:
         }
 
         def dump(v):
-            if isinstance(v, dict):
-                return ujson.dumps(v)
-            return str(v)
+            return ujson.dumps(v) if isinstance(v, dict) else str(v)
 
         nq = len(data)
         tag = "$0"
@@ -506,9 +504,8 @@ class Prepare:
 
         if isinstance(params, dict):
             for tk, tv in params.items():
-                if tk == "dim":
-                    if not tv or not isinstance(tv, int):
-                        raise ParamError(message="dim must be of int!")
+                if tk == "dim" and (not tv or not isinstance(tv, int)):
+                    raise ParamError(message="dim must be of int!")
                 kv_pair = common_types.KeyValuePair(key=str(tk), value=dump(tv))
                 index_params.extra_params.append(kv_pair)
 
@@ -617,13 +614,12 @@ class Prepare:
 
     @classmethod
     def load_balance_request(cls, collection_name, src_node_id, dst_node_ids, sealed_segment_ids):
-        request = milvus_types.LoadBalanceRequest(
+        return milvus_types.LoadBalanceRequest(
             collectionName=collection_name,
             src_nodeID=src_node_id,
             dst_nodeIDs=dst_node_ids,
             sealed_segmentIDs=sealed_segment_ids,
         )
-        return request
 
     @classmethod
     def manual_compaction(cls, collection_id, timetravel):
@@ -662,11 +658,10 @@ class Prepare:
         if collection_id is None or not isinstance(collection_id, int):
             raise ParamError(message=f"collection_id value {collection_id} is illegal")
 
-        request = milvus_types.GetReplicasRequest(
+        return milvus_types.GetReplicasRequest(
             collectionID=collection_id,
             with_shard_nodes=True,
         )
-        return request
 
     @classmethod
     def do_bulk_insert(cls, collection_name: str, partition_name: str, files: list, **kwargs):
@@ -691,19 +686,17 @@ class Prepare:
         if task_id is None or not isinstance(task_id, int):
             raise ParamError(f"task_id value {task_id} is not an integer")
 
-        req = milvus_types.GetImportStateRequest(task=task_id)
-        return req
+        return milvus_types.GetImportStateRequest(task=task_id)
 
     @classmethod
     def list_bulk_insert_tasks(cls, limit, collection_name):
         if limit is None or not isinstance(limit, int):
             raise ParamError(f"limit value {limit} is not an integer")
 
-        request = milvus_types.ListImportTasksRequest(
+        return milvus_types.ListImportTasksRequest(
             collection_name=collection_name,
             limit=limit,
         )
-        return request
 
     @classmethod
     def create_user_request(cls, user, password):

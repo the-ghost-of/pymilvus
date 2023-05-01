@@ -17,7 +17,7 @@ _NEW_PASSWORD = "new_password"
 
 
 def connect_without_auth(connection_name, host, port):
-    print(f"connect to milvus without auth")
+    print("connect to milvus without auth")
     print(f"connection: {connection_name}, host: {host}, port: {port}\n")
     connections.connect(alias=connection_name,
                         host=host,
@@ -26,7 +26,7 @@ def connect_without_auth(connection_name, host, port):
 
 
 def connect_to_milvus(connection_name, host, port, user, password):
-    print(f"connect to milvus user and password")
+    print("connect to milvus user and password")
     print(f"connection: {connection_name}, host: {host}, port: {port}\n")
     connections.connect(alias=connection_name,
                         host=host,

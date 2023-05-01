@@ -22,24 +22,23 @@ def get_commit(version="", short=True) -> str:
     target_v = __version__ if version == "" else version
     match = p.match(target_v)
 
-    if match is not None:
-        match_version = match.groups()
-        if match_version[7] is not None:
-            if match_version[4] is not None:
-                v = str(int(match_version[6]) - 1)
-                target_tag = 'v' + match_version[0] + match_version[5] + v
-            else:
-                target_tag = 'v' + ".".join(str(int("".join(match_version[1:4])) - 1).split(""))
-            target_num = int(match_version[-1])
-        elif match_version[4] is not None:
-            target_tag = 'v' + match_version[0] + match_version[4]
-            target_num = 0
-        else:
-            target_tag = 'v' + match_version[0]
-            target_num = 0
-    else:
+    if match is None:
         return f"Version: {target_v} isn't the right form"
 
+    match_version = match.groups()
+    if match_version[7] is not None:
+        if match_version[4] is not None:
+            v = str(int(match_version[6]) - 1)
+            target_tag = f'v{match_version[0]}{match_version[5]}{v}'
+        else:
+            target_tag = 'v' + ".".join(str(int("".join(match_version[1:4])) - 1).split(""))
+        target_num = int(match_version[-1])
+    elif match_version[4] is not None:
+        target_tag = f'v{match_version[0]}{match_version[4]}'
+        target_num = 0
+    else:
+        target_tag = f'v{match_version[0]}'
+        target_num = 0
     try:
         cmd = ['git', 'rev-list', '--reverse', '--ancestry-path', f'{target_tag}^..HEAD']
         print(f"git cmd: {' '.join(cmd)}")

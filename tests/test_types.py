@@ -99,10 +99,7 @@ class TestTypes:
             DataType.FLOAT_VECTOR,
         ]
 
-        actual = []
-        for d in data1:
-            actual.append(infer_dtype_bydata(d))
-
+        actual = [infer_dtype_bydata(d) for d in data1]
         assert actual == wants
 
 

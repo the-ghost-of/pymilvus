@@ -701,8 +701,7 @@ def list_aliases(collection_name: str, timeout=None, using="default"):
     """
     conn = _get_connection(using)
     resp = conn.describe_collection(collection_name, timeout=timeout)
-    aliases = resp["aliases"]
-    return aliases
+    return resp["aliases"]
 
 
 def do_bulk_insert(collection_name: str, files: list, partition_name=None, timeout=None, using="default", **kwargs) -> int:

@@ -20,7 +20,7 @@ connections.connect("default", host="localhost", port="19530")
 
 if utility.has_collection("hello_milvus"):
     utility.drop_collection("hello_milvus")
-    print(f"Dropping existing collection hello_milvus")
+    print("Dropping existing collection hello_milvus")
 
 fields = [
     FieldSchema(name="pk", dtype=DataType.INT64, is_primary=True, auto_id=False),
@@ -39,7 +39,7 @@ class MilvusMultiThreadingInsert:
 
         self.thread_local = threading.local()
         self.collection_name = collection_name
-        self.batchs = [i for i in range(number_of_batch)]
+        self.batchs = list(range(number_of_batch))
 
     def get_thread_local_collection(self):
         if not hasattr(self.thread_local, "collection"):
@@ -50,7 +50,7 @@ class MilvusMultiThreadingInsert:
         print(fmt.format(f"No.{number:2}: Start inserting entities"))
         rng = np.random.default_rng(seed=number)
         entities = [
-            [i for i in range(num_entities)],
+            list(range(num_entities)),
             rng.random(num_entities).tolist(),
             rng.random((num_entities, dim)),
         ]

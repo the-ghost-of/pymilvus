@@ -21,9 +21,7 @@ class LoopBase:
             _end = min(item.stop, self.__len__()) if item.stop else self.__len__()
             _step = item.step or 1
 
-            elements = [self.get__item(i) for i in range(_start, _end, _step)]
-            return elements
-
+            return [self.get__item(i) for i in range(_start, _end, _step)]
         if item >= self.__len__():
             raise IndexError("Index out of range")
 
@@ -51,8 +49,7 @@ class LoopCache:
         self._array = []
 
     def fill(self, index, obj):
-        if len(self._array) + 1 < index:
-            pass
+        pass
 
 
 class FieldSchema:
@@ -102,7 +99,7 @@ class FieldSchema:
         self.indexes.extend([index_dict])
 
     def dict(self):
-        _dict = {
+        return {
             "field_id": self.field_id,
             "name": self.name,
             "description": self.description,
@@ -111,7 +108,6 @@ class FieldSchema:
             "is_primary": self.is_primary,
             "auto_id": self.auto_id,
         }
-        return _dict
 
 
 class CollectionSchema:
@@ -161,19 +157,20 @@ class CollectionSchema:
         self.properties = raw.properties
 
     def dict(self):
-        if not self._raw:
-            return {}
-        _dict = {
-            "collection_name": self.collection_name,
-            "auto_id": self.auto_id,
-            "description": self.description,
-            "fields": [f.dict() for f in self.fields],
-            "aliases": self.aliases,
-            "collection_id": self.collection_id,
-            "consistency_level": self.consistency_level,
-            "properties": self.properties,
-        }
-        return _dict
+        return (
+            {
+                "collection_name": self.collection_name,
+                "auto_id": self.auto_id,
+                "description": self.description,
+                "fields": [f.dict() for f in self.fields],
+                "aliases": self.aliases,
+                "collection_id": self.collection_id,
+                "consistency_level": self.consistency_level,
+                "properties": self.properties,
+            }
+            if self._raw
+            else {}
+        )
 
     def __str__(self):
         return self.dict().__str__()
@@ -198,8 +195,7 @@ class Entity:
 
     @property
     def fields(self):
-        fields = [k for k, v in self._row_data.items()]
-        return fields
+        return [k for k, v in self._row_data.items()]
 
     def get(self, field):
         return self.value_of_field(field)
@@ -312,9 +308,7 @@ class Hits(LoopBase):
     def ids(self):
         if self._raw.ids.HasField("int_id"):
             return self._raw.ids.int_id.data
-        if self._raw.ids.HasField("str_id"):
-            return self._raw.ids.str_id.data
-        return []
+        return self._raw.ids.str_id.data if self._raw.ids.HasField("str_id") else []
 
     @property
     def distances(self):

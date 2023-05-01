@@ -41,13 +41,11 @@ class Prepare:
                         raise DataNotMatchException(message=ExceptionsMessage.FieldsNumInconsistent)
                     if not data[schema.primary_field.name].isnull().all():
                         raise DataNotMatchException(message=ExceptionsMessage.AutoIDWithData)
-                else:
-                    if len(fields) != len(data.columns) + 1:
-                        raise DataNotMatchException(message=ExceptionsMessage.FieldsNumInconsistent)
-            else:
-                if len(fields) != len(data.columns):
+                elif len(fields) != len(data.columns) + 1:
                     raise DataNotMatchException(message=ExceptionsMessage.FieldsNumInconsistent)
-            for i, field in enumerate(fields):
+            elif len(fields) != len(data.columns):
+                raise DataNotMatchException(message=ExceptionsMessage.FieldsNumInconsistent)
+            for field in fields:
                 if field.is_primary and field.auto_id:
                     continue
                 entities.append({"name": field.name,

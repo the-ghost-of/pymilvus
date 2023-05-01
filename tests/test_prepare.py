@@ -51,30 +51,11 @@ class TestCreateCollectionRequest:
         req = Prepare.create_collection_request("c_name", schema, **valid_properties)
         assert len(valid_properties.get("properties")) == len(req.properties)
 
-    @pytest.mark.parametrize("invalid_fields", [
-        list(),
-        {"no_fields_key": 1},
-        {"fields": []},  # lack of fields values
-        {"fields": [{"no_name": True}]},
-        {"fields": [{"name": "test_int64", "no_type": True}]},
-        {"fields": [{"name": "test_int64", "type_wrong": True}]},
-
-        # wrong type for primary field
-        {"fields": [{"name": "test_int64", "type": DataType.DOUBLE, "is_primary": True}]},
-
-        # two primary fields
-        {"fields": [
+    @pytest.mark.parametrize("invalid_fields", [[], {"no_fields_key": 1}, {"fields": []}, {"fields": [{"no_name": True}]}, {"fields": [{"name": "test_int64", "no_type": True}]}, {"fields": [{"name": "test_int64", "type_wrong": True}]}, {"fields": [{"name": "test_int64", "type": DataType.DOUBLE, "is_primary": True}]}, {"fields": [
             {"name": "test_int64", "type": DataType.INT64, "is_primary": True},
-            {"name": "test_int64_2", "type": DataType.INT64, "is_primary": True}]},
-
-        # two auto_id fields
-        {"fields": [
+            {"name": "test_int64_2", "type": DataType.INT64, "is_primary": True}]}, {"fields": [
             {"name": "test_int64", "type": DataType.INT64, "auto_id": True},
-            {"name": "test_int64_2", "type": DataType.INT64, "auto_id": True}]},
-
-        # wrong type for auto_id field
-        {"fields": [{"name": "test_double", "type": DataType.DOUBLE, "auto_id": True}]},
-    ])
+            {"name": "test_int64_2", "type": DataType.INT64, "auto_id": True}]}, {"fields": [{"name": "test_double", "type": DataType.DOUBLE, "auto_id": True}]}])
     def test_param_error_get_schema(self, invalid_fields):
         with pytest.raises(MilvusException):
             Prepare.get_schema("test_name", invalid_fields)

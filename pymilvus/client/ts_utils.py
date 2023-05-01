@@ -86,6 +86,3 @@ def construct_guarantee_ts(consistency_level, collection_name, kwargs):
     elif consistency_level == ConsistencyLevel.Eventually:
         # Using a very small timestamp.
         kwargs["guarantee_timestamp"] = get_eventually_ts()
-    else:
-        # Users customize the consistency level, no modification on `guarantee_timestamp`.
-        pass

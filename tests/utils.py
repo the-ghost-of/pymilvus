@@ -43,19 +43,19 @@ def binary_support():
     return ["BIN_FLAT", "BIN_IVF_FLAT"]
 
 def gen_collection_name():
-    return f'ut_collection_' + str(random.randint(100000, 999999))
+    return f'ut_collection_{random.randint(100000, 999999)}'
 
 
 def gen_partition_name():
-    return f'ut_partition_' + str(random.randint(100000, 999999))
+    return f'ut_partition_{random.randint(100000, 999999)}'
 
 
 def gen_index_name():
-    return f'ut_index_' + str(random.randint(100000, 999999))
+    return f'ut_index_{random.randint(100000, 999999)}'
 
 
 def gen_field_name():
-    return f'ut_field_' + str(random.randint(100000, 999999))
+    return f'ut_field_{random.randint(100000, 999999)}'
 
 
 def gen_schema():
@@ -65,8 +65,7 @@ def gen_schema():
         FieldSchema(gen_field_name(), DataType.FLOAT),
         FieldSchema(gen_field_name(), DataType.FLOAT_VECTOR, dim=default_dim)
     ]
-    collection_schema = CollectionSchema(fields)
-    return collection_schema
+    return CollectionSchema(fields)
 
 
 def gen_vectors(num, dim, is_normal=True):
@@ -84,19 +83,17 @@ def gen_pd_data(nb, is_normal=False):
     import numpy
     vectors = gen_vectors(nb, default_dim, is_normal)
     datas = {
-        "int64": [i for i in range(nb)],
-        "float": numpy.array([i for i in range(nb)], dtype=numpy.float32),
-        default_float_vec_field_name: vectors
+        "int64": list(range(nb)),
+        "float": numpy.array(list(range(nb)), dtype=numpy.float32),
+        default_float_vec_field_name: vectors,
     }
-    data = pandas.DataFrame(datas)
-    return data
+    return pandas.DataFrame(datas)
 
 
 # list or tuple data
 def gen_list_data(nb, is_normal=False):
     vectors = gen_vectors(nb, default_dim, is_normal)
-    datas = [[i for i in range(nb)], [float(i) for i in range(nb)], vectors]
-    return datas
+    return [list(range(nb)), [float(i) for i in range(nb)], vectors]
 
 
 def gen_index():
@@ -144,7 +141,10 @@ def gen_simple_index():
     for i in range(len(all_index_types)):
         if all_index_types[i] in binary_support():
             continue
-        dic = {"index_type": all_index_types[i], "metric_type": "L2"}
-        dic.update({"params": default_index_params[i]})
+        dic = {
+            "index_type": all_index_types[i],
+            "metric_type": "L2",
+            "params": default_index_params[i],
+        }
         index_params.append(dic)
     return index_params
