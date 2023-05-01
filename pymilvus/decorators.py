@@ -52,7 +52,10 @@ def retry_on_rpc_failure(retry_times=10, initial_back_off=0.01, max_back_off=60,
                     # DEADLINE_EXCEEDED means that the task wat not completed
                     # UNAVAILABLE means that the service is not reachable currently
                     # Reference: https://grpc.github.io/grpc/python/grpc.html#grpc-status-code
-                    if e.code() != grpc.StatusCode.DEADLINE_EXCEEDED and e.code() != grpc.StatusCode.UNAVAILABLE:
+                    if e.code() not in [
+                        grpc.StatusCode.DEADLINE_EXCEEDED,
+                        grpc.StatusCode.UNAVAILABLE,
+                    ]:
                         raise MilvusException(message=str(e)) from e
                     if not retry_on_deadline and e.code() == grpc.StatusCode.DEADLINE_EXCEEDED:
                         raise MilvusException(message=str(e)) from e
@@ -89,6 +92,7 @@ def retry_on_rpc_failure(retry_times=10, initial_back_off=0.01, max_back_off=60,
                     counter += 1
 
         return handler
+
     return wrapper
 
 

@@ -88,7 +88,7 @@ def create_index(name, field_name):
         "params": {"nlist": _NLIST}
     }
     milvus.create_index(name, field_name, index_param)
-    print("Create index: {}".format(index_param))
+    print(f"Create index: {index_param}")
 
 
 def drop_index(name, field_name):

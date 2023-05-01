@@ -120,9 +120,7 @@ class Future(AbstractFuture):
             # just return response object received from gRPC
             return self._response
 
-        if self._results:
-            return self._results
-        return self.on_response(self._response)
+        return self._results if self._results else self.on_response(self._response)
 
     def cancel(self):
         with self._condition:
@@ -200,9 +198,7 @@ class ChunkedSearchFuture(Future):
             # just return response object received from gRPC
             raise AttributeError("Not supported to return response object received from gRPC")
 
-        if self._results:
-            return self._results
-        return self.on_response(self._response)
+        return self._results if self._results else self.on_response(self._response)
 
     def cancel(self):
         with self._condition:

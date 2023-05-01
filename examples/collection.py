@@ -64,8 +64,7 @@ def gen_default_fields(description="test collection"):
         FieldSchema(name="double", dtype=DataType.DOUBLE),
         FieldSchema(name=default_float_vec_field_name, dtype=DataType.FLOAT_VECTOR, dim=default_dim)
     ]
-    default_schema = CollectionSchema(fields=default_fields, description=description)
-    return default_schema
+    return CollectionSchema(fields=default_fields, description=description)
 
 
 def gen_default_fields_with_primary_key_1():
@@ -74,8 +73,7 @@ def gen_default_fields_with_primary_key_1():
         FieldSchema(name="double", dtype=DataType.DOUBLE),
         FieldSchema(name=default_float_vec_field_name, dtype=DataType.FLOAT_VECTOR, dim=default_dim)
     ]
-    default_schema = CollectionSchema(fields=default_fields, description="test collection")
-    return default_schema
+    return CollectionSchema(fields=default_fields, description="test collection")
 
 
 def gen_default_fields_with_primary_key_2():
@@ -84,8 +82,11 @@ def gen_default_fields_with_primary_key_2():
         FieldSchema(name="double", dtype=DataType.DOUBLE),
         FieldSchema(name=default_float_vec_field_name, dtype=DataType.FLOAT_VECTOR, dim=default_dim)
     ]
-    default_schema = CollectionSchema(fields=default_fields, description="test collection", primary_field="int64")
-    return default_schema
+    return CollectionSchema(
+        fields=default_fields,
+        description="test collection",
+        primary_field="int64",
+    )
 
 
 def gen_binary_schema():
@@ -94,8 +95,7 @@ def gen_binary_schema():
         FieldSchema(name="double", dtype=DataType.DOUBLE),
         FieldSchema(name=default_binary_vec_field_name, dtype=DataType.BINARY_VECTOR, dim=default_dim)
     ]
-    default_schema = CollectionSchema(fields=binary_fields, description="test collection")
-    return default_schema
+    return CollectionSchema(fields=binary_fields, description="test collection")
 
 
 def gen_float_vectors(num, dim, is_normal=True):
@@ -106,12 +106,7 @@ def gen_float_vectors(num, dim, is_normal=True):
 
 def gen_float_data(nb, is_normal=False):
     vectors = gen_float_vectors(nb, default_dim, is_normal)
-    entities = [
-        [i for i in range(nb)],
-        [float(i) for i in range(nb)],
-        vectors
-    ]
-    return entities
+    return [list(range(nb)), [float(i) for i in range(nb)], vectors]
 
 
 def gen_dataframe(nb, is_normal=False):
@@ -120,9 +115,9 @@ def gen_dataframe(nb, is_normal=False):
 
     vectors = gen_float_vectors(nb, default_dim, is_normal)
     data = {
-        "int64": [i for i in range(nb)],
-        "float": numpy.array([i for i in range(nb)], dtype=numpy.float32),
-        "float_vector": vectors
+        "int64": list(range(nb)),
+        "float": numpy.array(list(range(nb)), dtype=numpy.float32),
+        "float_vector": vectors,
     }
 
     return pandas.DataFrame(data)
@@ -131,8 +126,8 @@ def gen_dataframe(nb, is_normal=False):
 def gen_binary_vectors(num, dim):
     raw_vectors = []
     binary_vectors = []
-    for i in range(num):
-        raw_vector = [random.randint(0, 1) for i in range(dim)]
+    for _ in range(num):
+        raw_vector = [random.randint(0, 1) for _ in range(dim)]
         raw_vectors.append(raw_vector)
         binary_vectors.append(bytes(np.packbits(raw_vector, axis=-1).tolist()))
     return raw_vectors, binary_vectors
@@ -140,17 +135,12 @@ def gen_binary_vectors(num, dim):
 
 def gen_binary_data(nb):
     raw_vectors, binary_vectors = gen_binary_vectors(nb, dim=default_dim)
-    entities = [
-        [i for i in range(nb)],
-        [float(i) for i in range(nb)],
-        binary_vectors
-    ]
-    return entities
+    return [list(range(nb)), [float(i) for i in range(nb)], binary_vectors]
 
 
 def gen_unique_str(str_value=None):
     prefix = "".join(random.choice(string.ascii_letters + string.digits) for _ in range(8))
-    return "collection_" + prefix if str_value is None else str_value + "_" + prefix
+    return f"collection_{prefix}" if str_value is None else f"{str_value}_{prefix}"
 
 
 def binary_support():
@@ -162,8 +152,11 @@ def gen_simple_index():
     for i in range(len(all_index_types)):
         if all_index_types[i] in binary_support():
             continue
-        dic = {"index_type": all_index_types[i], "metric_type": "L2"}
-        dic.update({"params": default_index_params[i]})
+        dic = {
+            "index_type": all_index_types[i],
+            "metric_type": "L2",
+            "params": default_index_params[i],
+        }
         index_params.append(dic)
     return index_params
 

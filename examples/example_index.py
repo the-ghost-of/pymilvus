@@ -66,7 +66,7 @@ def has_collection(name):
 # Drop a collection in Milvus
 def drop_collection(name):
     utility.drop_collection(name)
-    print("\nDrop collection: {}".format(name))
+    print(f"\nDrop collection: {name}")
 
 
 # List all collections in Milvus

@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
     ids_expr = ",".join(str(x) for x in ids.primary_keys)
 
-    expr = "id in [ " + ids_expr + " ] "
+    expr = f"id in [ {ids_expr} ] "
 
     print(expr)
 

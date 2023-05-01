@@ -84,7 +84,7 @@ class TestPartition:
         data = gen_list_data(default_nb)
         ids = partition.insert(data)
         assert len(ids) == default_nb
-        res = partition.get(ids[0:10])
+        res = partition.get(ids[:10])
 
     @pytest.mark.xfail
     def test_query(self, partition):
@@ -92,5 +92,5 @@ class TestPartition:
         ids = partition.insert(data)
         assert len(ids) == default_nb
         ids_expr = ",".join(str(x) for x in ids)
-        expr = "id in [ " + ids_expr + " ]"
+        expr = f"id in [ {ids_expr} ]"
         res = partition.query(expr)

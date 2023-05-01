@@ -67,9 +67,12 @@ def gen_default_fields(auto_id=True):
         FieldSchema(name="float", dtype=DataType.FLOAT),
         FieldSchema(name=default_float_vec_field_name, dtype=DataType.FLOAT_VECTOR, dim=default_dim)
     ]
-    default_schema = CollectionSchema(fields=default_fields, description="test collection",
-                                      segment_row_limit=default_segment_row_limit, auto_id=False)
-    return default_schema
+    return CollectionSchema(
+        fields=default_fields,
+        description="test collection",
+        segment_row_limit=default_segment_row_limit,
+        auto_id=False,
+    )
 
 
 def gen_vectors(num, dim, is_normal=True):
@@ -80,17 +83,12 @@ def gen_vectors(num, dim, is_normal=True):
 
 def gen_data(nb, is_normal=False):
     vectors = gen_vectors(nb, default_dim, is_normal)
-    entities = [
-        [i for i in range(nb)],
-        [float(i) for i in range(nb)],
-        vectors
-    ]
-    return entities
+    return [list(range(nb)), [float(i) for i in range(nb)], vectors]
 
 
 def gen_unique_str(str_value=None):
     prefix = "".join(random.choice(string.ascii_letters + string.digits) for _ in range(8))
-    return "collection_" + prefix if str_value is None else str_value + "_" + prefix
+    return f"collection_{prefix}" if str_value is None else f"{str_value}_{prefix}"
 
 
 def binary_support():
@@ -102,8 +100,11 @@ def gen_simple_index():
     for i in range(len(all_index_types)):
         if all_index_types[i] in binary_support():
             continue
-        dic = {"index_type": all_index_types[i], "metric_type": "L2"}
-        dic.update({"params": default_index_params[i]})
+        dic = {
+            "index_type": all_index_types[i],
+            "metric_type": "L2",
+            "params": default_index_params[i],
+        }
         index_params.append(dic)
     return index_params
 

@@ -18,7 +18,7 @@ class TestDecorators:
             raise MockForceDenyError()
         if code == common_pb2.RateLimit:
             raise MockRateLimitError()
-        raise MilvusException(common_pb2.UNEXPECTED_ERROR, str("unexpected error"))
+        raise MilvusException(common_pb2.UNEXPECTED_ERROR, "unexpected error")
 
     @pytest.mark.parametrize("times", [0, 1, 2, 3])
     def test_retry_decorators_unavailable(self, times):

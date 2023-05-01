@@ -49,7 +49,7 @@ def select_one_user(username, connection=_CONNECTION):
 
 
 def select_all_user(connection=_CONNECTION):
-    print(f"select all user")
+    print("select all user")
     userinfo = utility.list_users(False, using=connection)
     print(userinfo)
     userinfo = utility.list_users(True, using=connection)
@@ -58,7 +58,7 @@ def select_all_user(connection=_CONNECTION):
 
 
 def select_all_role(connection=_CONNECTION):
-    print(f"select_all_role")
+    print("select_all_role")
     roles = utility.list_roles(False, using=connection)
     print(roles)
     roles = utility.list_roles(True, using=connection)
@@ -70,7 +70,7 @@ def has_collection(collection_name, connection=_CONNECTION):
     print(f"has collection, collection_name: {collection_name}")
     has = utility.has_collection("hello_milvus", using=connection)
     print(has)
-    print(f"has collection end")
+    print("has collection end")
 
 
 default_dim = 128
@@ -85,17 +85,12 @@ def gen_float_vectors(num, dim, is_normal=True):
 
 def gen_float_data(nb, is_normal=False):
     vectors = gen_float_vectors(nb, default_dim, is_normal)
-    entities = [
-        [i for i in range(nb)],
-        [float(i) for i in range(nb)],
-        vectors
-    ]
-    return entities
+    return [list(range(nb)), [float(i) for i in range(nb)], vectors]
 
 
 # rbac I
 def rbac_collection(connection=_CONNECTION):
-    print(f"rbac_collection")
+    print("rbac_collection")
     default_float_vec_field_name = "float_vector"
     default_fields = [
         FieldSchema(name="int64", dtype=DataType.INT64, is_primary=True),
@@ -118,7 +113,7 @@ def rbac_collection(connection=_CONNECTION):
 
     collection = Collection(name=_COLLECTION_NAME, schema=default_schema, using=_CONNECTION)
     collection.drop()
-    print(f"rbac_collection done")
+    print("rbac_collection done")
 
 
 # rbac II
@@ -143,11 +138,11 @@ def role_example():
     role = Role(role_name, using=_CONNECTION)
     print(f"create role, role_name: {role_name}")
     role.create()
-    print(f"get users")
+    print("get users")
     role.get_users()
-    print(f"select all role")
+    print("select all role")
     print(select_all_role())
-    print(f"drop role")
+    print("drop role")
     role.drop()
 
 
@@ -155,18 +150,18 @@ def associate_users_with_roles_example():
     username = "root"
     role_name = "public"
     role = Role(role_name, using=_CONNECTION)
-    print(f"add user")
+    print("add user")
     role.add_user(username)
-    print(f"get users")
+    print("get users")
     role.get_users()
     print(select_one_user(username))
     print(select_all_user())
-    print(f"remove user")
+    print("remove user")
     role.remove_user(username)
 
 
 def privilege_example():
-    print(f"privilege example")
+    print("privilege example")
 
     username = "foo53"
     password = "pfoo123"
@@ -179,17 +174,17 @@ def privilege_example():
     role = Role(role_name, using=_CONNECTION)
     print(f"create role, role_name: {role_name}")
     role.create()
-    print(f"add user")
+    print("add user")
     role.add_user(username)
-    print(f"grant privilege")
+    print("grant privilege")
     role.grant("Global", "*", privilege_create)
     role.grant("Collection", object_name, privilege_insert)
     # role.grant("Collection", object_name, "*")
     # role.grant("Collection", "*", privilege_insert)
 
-    print(f"list grants")
+    print("list grants")
     print(role.list_grants())
-    print(f"list grant")
+    print("list grant")
     print(role.list_grant("Collection", object_name))
 
     connect_to_milvus(connection=_FOO_CONNECTION, user=username, password=password)
@@ -197,12 +192,12 @@ def privilege_example():
     rbac_collection(connection=_FOO_CONNECTION)
     rbac_user(username, password, role_name, connection=_FOO_CONNECTION)
 
-    print(f"revoke privilege")
+    print("revoke privilege")
     role.revoke("Global", "*", privilege_create)
     role.revoke("Collection", object_name, privilege_insert)
     # role.revoke("Collection", object_name, "*")
     # role.revoke("Collection", "*", privilege_insert)
-    print(f"remove user")
+    print("remove user")
     role.remove_user(username)
     role.drop()
     drop_credential(username)

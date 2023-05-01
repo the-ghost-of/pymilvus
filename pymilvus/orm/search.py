@@ -31,10 +31,7 @@ class _IterableWrapper:
             i_len = self._iterable.__len__()
             _end = min(item.stop, i_len) if item.stop else i_len
 
-            elements = []
-            for i in range(_start, _end):
-                elements.append(self.on_result(s[i]))
-            return elements
+            return [self.on_result(s[i]) for i in range(_start, _end)]
         return s
 
     def __len__(self):
@@ -176,10 +173,7 @@ class Hits:
             i_len = self._hits.__len__()
             _end = min(item.stop, i_len) if item.stop else i_len
 
-            elements = []
-            for i in range(_start, _end):
-                elements.append(self.on_result(s[i]))
-            return elements
+            return [self.on_result(s[i]) for i in range(_start, _end)]
         return self.on_result(s)
 
     def __len__(self) -> int:
@@ -250,10 +244,7 @@ class SearchResult:
             i_len = self._qs.__len__()
             _end = min(item.stop, i_len) if item.stop else i_len
 
-            elements = []
-            for i in range(_start, _end):
-                elements.append(self.on_result(s[i]))
-            return elements
+            return [self.on_result(s[i]) for i in range(_start, _end)]
         return self.on_result(s)
 
     def __len__(self) -> int:

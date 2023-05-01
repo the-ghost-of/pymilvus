@@ -62,8 +62,7 @@ def mkts_from_hybridts(hybridts, milliseconds=0., delta=None):
     logical = hybridts & LOGICAL_BITS_MASK
     physical = hybridts >> LOGICAL_BITS
 
-    new_ts = int((int((physical + milliseconds)) << LOGICAL_BITS) + logical)
-    return new_ts
+    return int((int((physical + milliseconds)) << LOGICAL_BITS) + logical)
 
 
 def mkts_from_unixtime(epoch, milliseconds=0., delta=None):

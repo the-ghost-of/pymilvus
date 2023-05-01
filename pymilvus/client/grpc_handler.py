@@ -268,10 +268,10 @@ class GrpcHandler:
         request = Prepare.show_collections_request()
         rf = self._stub.ShowCollections.future(request, timeout=timeout)
         response = rf.result()
-        status = response.status
         if response.status.error_code == 0:
             return list(response.collection_names)
 
+        status = response.status
         raise MilvusException(status.error_code, status.reason)
 
     @retry_on_rpc_failure()
@@ -326,10 +326,7 @@ class GrpcHandler:
         status = response.status
         if status.error_code == 0:
             statistics = response.statistics
-            info_dict = {}
-            for kv in statistics:
-                info_dict[kv.key] = kv.value
-            return info_dict
+            return {kv.key: kv.value for kv in statistics}
         raise MilvusException(status.error_code, status.reason)
 
     @retry_on_rpc_failure()
@@ -377,10 +374,13 @@ class GrpcHandler:
 
         fields_info = collection_schema["fields"]
 
-        request = param if param \
-            else Prepare.batch_insert_or_upsert_param(collection_name, entities, partition_name, fields_info, isInsert)
-
-        return request
+        return (
+            param
+            if param
+            else Prepare.batch_insert_or_upsert_param(
+                collection_name, entities, partition_name, fields_info, isInsert
+            )
+        )
 
     @retry_on_rpc_failure()
     def batch_insert(self, collection_name, entities, partition_name=None, timeout=None, **kwargs):
@@ -570,7 +570,10 @@ class GrpcHandler:
             if field_name != fields["name"]:
                 continue
             valid_field = True
-            if fields["type"] != DataType.FLOAT_VECTOR and fields["type"] != DataType.BINARY_VECTOR:
+            if fields["type"] not in [
+                DataType.FLOAT_VECTOR,
+                DataType.BINARY_VECTOR,
+            ]:
                 break
             # check index params on vector field.
             check_index_params(params)
@@ -863,9 +866,8 @@ class GrpcHandler:
         while not flush_ret:
             flush_ret = self.get_flush_state(segment_ids, timeout, **kwargs)
             end = time.time()
-            if timeout is not None:
-                if end - start > timeout:
-                    raise MilvusException(message=f"wait for flush timeout, segment ids: {segment_ids}")
+            if timeout is not None and end - start > timeout:
+                raise MilvusException(message=f"wait for flush timeout, segment ids: {segment_ids}")
 
             if not flush_ret:
                 time.sleep(0.5)
@@ -960,7 +962,7 @@ class GrpcHandler:
         # check if all lists are of the same length
         it = iter(response.fields_data)
         num_entities = len_of(next(it))
-        if not all(len_of(field_data) == num_entities for field_data in it):
+        if any(len_of(field_data) != num_entities for field_data in it):
             raise MilvusException(message="The length of fields data is inconsistent")
 
         # transpose
@@ -1050,9 +1052,8 @@ class GrpcHandler:
             if compaction_state == State.UndefiedState:
                 return False
             end = time.time()
-            if timeout is not None:
-                if end - start > timeout:
-                    raise MilvusException(message=f"get compaction state timeout, compaction id: {compaction_id}")
+            if timeout is not None and end - start > timeout:
+                raise MilvusException(message=f"get compaction state timeout, compaction id: {compaction_id}")
 
     @retry_on_rpc_failure()
     def get_compaction_plans(self, compaction_id, timeout=None, **kwargs) -> CompactionPlans:
@@ -1116,9 +1117,12 @@ class GrpcHandler:
         if resp.status.error_code != 0:
             raise MilvusException(resp.status.error_code, resp.status.reason)
 
-        tasks = [BulkInsertState(t.id, t.state, t.row_count, t.id_list, t.infos, t.create_ts)
-                 for t in resp.tasks]
-        return tasks
+        return [
+            BulkInsertState(
+                t.id, t.state, t.row_count, t.id_list, t.infos, t.create_ts
+            )
+            for t in resp.tasks
+        ]
 
     @retry_on_rpc_failure()
     def create_user(self, user, password, timeout=None, **kwargs):
@@ -1313,9 +1317,8 @@ class GrpcHandler:
         while not flush_ret:
             flush_ret = self.get_flush_all_state(flush_all_ts, timeout, **kwargs)
             end = time.time()
-            if timeout is not None:
-                if end - start > timeout:
-                    raise MilvusException(message=f"wait for flush all timeout, flush_all_ts: {flush_all_ts}")
+            if timeout is not None and end - start > timeout:
+                raise MilvusException(message=f"wait for flush all timeout, flush_all_ts: {flush_all_ts}")
 
             if not flush_ret:
                 time.sleep(5)

@@ -41,12 +41,12 @@ class SingleInstanceMetaClass(type):
     def __init__(cls, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def __call__(cls, *args, **kwargs):
-        if cls.instance:
-            return cls.instance
-        cls.instance = cls.__new__(cls)
-        cls.instance.__init__(*args, **kwargs)
-        return cls.instance
+    def __call__(self, *args, **kwargs):
+        if self.instance:
+            return self.instance
+        self.instance = self.__new__(self)
+        self.instance.__init__(*args, **kwargs)
+        return self.instance
 
     @synchronized
     def __new__(cls, *args, **kwargs):
@@ -163,9 +163,11 @@ class Connections(metaclass=SingleInstanceMetaClass):
                 config.get("host", ""),
                 config.get("port", ""))
 
-            if alias in self._connected_alias:
-                if self._alias[alias].get("address") != addr:
-                    raise ConnectionConfigException(message=ExceptionsMessage.ConnDiffConf % alias)
+            if (
+                alias in self._connected_alias
+                and self._alias[alias].get("address") != addr
+            ):
+                raise ConnectionConfigException(message=ExceptionsMessage.ConnDiffConf % alias)
 
             alias_config = {
                 "address": addr,
@@ -297,9 +299,11 @@ class Connections(metaclass=SingleInstanceMetaClass):
             in_addr, parsed_uri = self.__get_full_address(*config)
             kwargs["address"] = in_addr
 
-            if self.has_connection(alias):
-                if self._alias[alias].get("address") != in_addr:
-                    raise ConnectionConfigException(message=ExceptionsMessage.ConnDiffConf % alias)
+            if (
+                self.has_connection(alias)
+                and self._alias[alias].get("address") != in_addr
+            ):
+                raise ConnectionConfigException(message=ExceptionsMessage.ConnDiffConf % alias)
 
             # uri might take extra info
             if parsed_uri is not None:

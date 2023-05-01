@@ -4,9 +4,9 @@ from mock_result import MockMutationResult
 
 class MockMilvus:
     def __init__(self, host=None, port=None, handler="GRPC", pool="SingletonThread", **kwargs):
-        self._collections = dict()
-        self._collection_partitions = dict()
-        self._collection_indexes = dict()
+        self._collections = {}
+        self._collection_partitions = {}
+        self._collection_indexes = {}
 
     def create_collection(self, collection_name, fields, timeout=None, **kwargs):
         if collection_name in self._collections:
@@ -50,7 +50,7 @@ class MockMilvus:
         return {'row_count': 0}
 
     def list_collections(self, timeout=None):
-        logging.debug(f"list_collections")
+        logging.debug("list_collections")
         return list(self._collections.keys())
 
     def create_partition(self, collection_name, partition_tag, timeout=None):
@@ -67,7 +67,9 @@ class MockMilvus:
         if partition_tag not in self._collection_partitions[collection_name]:
             raise BaseException(1, f"DropPartition failed: partition {partition_tag} does not exist")
         if partition_tag == "_default":
-            raise BaseException(1, f"DropPartition failed: default partition cannot be deleted")
+            raise BaseException(
+                1, "DropPartition failed: default partition cannot be deleted"
+            )
         logging.debug(f"drop_partition: {collection_name}, {partition_tag}")
         self._collection_partitions[collection_name].remove(partition_tag)
 
@@ -105,7 +107,7 @@ class MockMilvus:
         if collection_name not in self._collections:
             raise BaseException(1, f"can't find collection: {collection_name}")
         logging.debug(f"list_partitions: {collection_name}")
-        return [e for e in self._collection_partitions[collection_name]]
+        return list(self._collection_partitions[collection_name])
 
     def create_index(self, collection_name, field_name, params, timeout=None, **kwargs):
         logging.debug(f"create_index: {collection_name}, {field_name}, {params}")

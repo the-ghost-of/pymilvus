@@ -91,18 +91,13 @@ def infer_dtype_by_scaladata(data):
         return DataType.BOOL
     if isinstance(data, bytes):
         return DataType.BINARY_VECTOR
-    if is_float(data):
-        return DataType.DOUBLE
-
-    return DataType.UNKNOWN
+    return DataType.DOUBLE if is_float(data) else DataType.UNKNOWN
 
 
 def infer_dtype_bydata(data):
     d_type = DataType.UNKNOWN
     if is_scalar(data):
-        d_type = infer_dtype_by_scaladata(data)
-        return d_type
-
+        return infer_dtype_by_scaladata(data)
     if is_list_like(data) or is_array_like(data):
         failed = False
         try:

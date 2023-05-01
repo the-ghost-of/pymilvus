@@ -13,7 +13,7 @@ class Fields:
             self.name = kwargs.get("name", None)
             self.is_primary_key = kwargs.get("is_primary_key", False)
             self.data_type = kwargs.get("data_type", None)
-            self.type_params = kwargs.get("type_params", dict())
+            self.type_params = kwargs.get("type_params", {})
             self.autoID = kwargs.get("autoID", False)
 
         def __eq__(self, other):
@@ -44,12 +44,13 @@ class Fields:
                                                )
             for field in grpc_fields}
         n_dict_fields = {
-            field["name"]: Fields.NormalizedField(name=field["name"],
-                                                  is_primary_key=field.get("is_primary", False),
-                                                  data_type=field["type"],
-                                                  type_params=field.get("params", dict()),
-                                                  autoID=field.get("auto_id", False)
-                                                  )
+            field["name"]: Fields.NormalizedField(
+                name=field["name"],
+                is_primary_key=field.get("is_primary", False),
+                data_type=field["type"],
+                type_params=field.get("params", {}),
+                autoID=field.get("auto_id", False),
+            )
             for field in dict_fields
         }
         return n_grpc_fields == n_dict_fields

@@ -9,8 +9,6 @@ from pymilvus.orm import schema as s
 class TestCollectionSchema:
     @pytest.fixture(scope="function")
     def raw_dict(self):
-        _dict = {}
-        _dict["description"] = "TestCollectionSchema_description"
         fields = [
             {
                 "name": "vec1",
@@ -33,9 +31,7 @@ class TestCollectionSchema:
                 "auto_id": False
             },
         ]
-        _dict["fields"] = fields
-
-        return _dict
+        return {"description": "TestCollectionSchema_description", "fields": fields}
 
     def test_constructor_from_dict(self, raw_dict):
         schema = CollectionSchema.construct_from_dict(raw_dict)
@@ -56,29 +52,29 @@ class TestCollectionSchema:
 class TestFieldSchema:
     @pytest.fixture(scope="function")
     def raw_dict_float_vector(self):
-        _dict = dict()
-        _dict["name"] = "TestFieldSchema_name_floatvector"
-        _dict["description"] = "TestFieldSchema_description_floatvector"
-        _dict["type"] = DataType.FLOAT_VECTOR
-        _dict["params"] = {"dim": 128}
-        return _dict
+        return {
+            "name": "TestFieldSchema_name_floatvector",
+            "description": "TestFieldSchema_description_floatvector",
+            "type": DataType.FLOAT_VECTOR,
+            "params": {"dim": 128},
+        }
 
     @pytest.fixture(scope="function")
     def raw_dict_binary_vector(self):
-        _dict = dict()
-        _dict["name"] = "TestFieldSchema_name_binary_vector"
-        _dict["description"] = "TestFieldSchema_description_binary_vector"
-        _dict["type"] = DataType.BINARY_VECTOR
-        _dict["params"] = {"dim": 128}
-        return _dict
+        return {
+            "name": "TestFieldSchema_name_binary_vector",
+            "description": "TestFieldSchema_description_binary_vector",
+            "type": DataType.BINARY_VECTOR,
+            "params": {"dim": 128},
+        }
 
     @pytest.fixture(scope="function")
     def raw_dict_norm(self):
-        _dict = dict()
-        _dict["name"] = "TestFieldSchema_name_norm"
-        _dict["description"] = "TestFieldSchema_description_norm"
-        _dict["type"] = DataType.INT64
-        return _dict
+        return {
+            "name": "TestFieldSchema_name_norm",
+            "description": "TestFieldSchema_description_norm",
+            "type": DataType.INT64,
+        }
 
     @pytest.fixture(scope="function")
     def dataframe1(self):
@@ -88,8 +84,7 @@ class TestFieldSchema:
             'int32': [2],
             'float_vec': [numpy.array([3, 4.0], numpy.float32)]
         }
-        df1 = pandas.DataFrame(data)
-        return df1
+        return pandas.DataFrame(data)
 
     def test_constructor_from_float_dict(self, raw_dict_float_vector):
         field = FieldSchema.construct_from_dict(raw_dict_float_vector)
@@ -127,12 +122,12 @@ class TestFieldSchema:
         assert field1 != field3
 
     def test_to_dict(self, raw_dict_norm, raw_dict_float_vector, raw_dict_binary_vector):
-        fields = []
         dicts = [raw_dict_norm, raw_dict_float_vector, raw_dict_binary_vector]
-        fields.append(FieldSchema.construct_from_dict(raw_dict_norm))
-        fields.append(FieldSchema.construct_from_dict(raw_dict_float_vector))
-        fields.append(FieldSchema.construct_from_dict(raw_dict_binary_vector))
-
+        fields = [
+            FieldSchema.construct_from_dict(raw_dict_norm),
+            FieldSchema.construct_from_dict(raw_dict_float_vector),
+            FieldSchema.construct_from_dict(raw_dict_binary_vector),
+        ]
         for i, f in enumerate(fields):
             target = f.to_dict()
             assert target == dicts[i]

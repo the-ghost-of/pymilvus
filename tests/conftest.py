@@ -15,9 +15,7 @@ descriptor = milvus_pb2.DESCRIPTOR.services_by_name['MilvusService']
 
 @pytest.fixture(scope="function")
 def channel(request):
-    channel = grpc_testing.channel([descriptor], grpc_testing.strict_real_time())
-
-    return channel
+    return grpc_testing.channel([descriptor], grpc_testing.strict_real_time())
 
 
 @pytest.fixture(scope="function")

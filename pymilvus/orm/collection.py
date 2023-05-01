@@ -91,8 +91,7 @@ class Collection:
         self._kwargs = kwargs
         conn = self._get_connection()
 
-        has = conn.has_collection(self._name, **kwargs)
-        if has:
+        if has := conn.has_collection(self._name, **kwargs):
             resp = conn.describe_collection(self._name, **kwargs)
             s_consistency_level = resp.get("consistency_level", DEFAULT_CONSISTENCY_LEVEL)
             arg_consistency_level = kwargs.get("consistency_level", s_consistency_level)
@@ -133,8 +132,7 @@ class Collection:
         }
         r = ["<Collection>:\n-------------\n"]
         s = "<{}>: {}\n"
-        for k, v in _dict.items():
-            r.append(s.format(k, v))
+        r.extend(s.format(k, v) for k, v in _dict.items())
         return "".join(r)
 
     def _get_connection(self):
@@ -155,9 +153,10 @@ class Collection:
                 pk_index = i
         if pk_index == -1:
             raise SchemaNotReadyException(message=ExceptionsMessage.PrimaryKeyNotExist)
-        if "auto_id" in kwargs:
-            if not isinstance(kwargs.get("auto_id", None), bool):
-                raise AutoIDException(message=ExceptionsMessage.AutoIDType)
+        if "auto_id" in kwargs and not isinstance(
+            kwargs.get("auto_id", None), bool
+        ):
+            raise AutoIDException(message=ExceptionsMessage.AutoIDType)
         auto_id = kwargs.pop("auto_id", False)
         if auto_id:
             if dataframe[primary_field].isnull().all():
@@ -202,8 +201,7 @@ class Collection:
         """List[str]: all the aliases of the collection. """
         conn = self._get_connection()
         resp = conn.describe_collection(self._name, **kwargs)
-        aliases = resp["aliases"]
-        return aliases
+        return resp["aliases"]
 
     @property
     def description(self) -> str:
@@ -658,9 +656,7 @@ class Collection:
         res = conn.search(self._name, data, anns_field, param, limit, expr,
                           partition_names, output_fields, round_decimal, timeout=timeout,
                           schema=self._schema_dict, **kwargs)
-        if kwargs.get("_async", False):
-            return SearchFuture(res)
-        return SearchResult(res)
+        return SearchFuture(res) if kwargs.get("_async", False) else SearchResult(res)
 
     def query(self, expr, output_fields=None, partition_names=None, timeout=None, **kwargs):
         """ Query with expressions
@@ -739,9 +735,15 @@ class Collection:
             raise DataTypeNotMatchException(message=ExceptionsMessage.ExprType % type(expr))
 
         conn = self._get_connection()
-        res = conn.query(self._name, expr, output_fields, partition_names,
-                         timeout=timeout, schema=self._schema_dict, **kwargs)
-        return res
+        return conn.query(
+            self._name,
+            expr,
+            output_fields,
+            partition_names,
+            timeout=timeout,
+            schema=self._schema_dict,
+            **kwargs
+        )
 
     @property
     def partitions(self, **kwargs) -> List[Partition]:
@@ -763,10 +765,10 @@ class Collection:
         """
         conn = self._get_connection()
         partition_strs = conn.list_partitions(self._name, **kwargs)
-        partitions = []
-        for partition in partition_strs:
-            partitions.append(Partition(self, partition, construct_only=True))
-        return partitions
+        return [
+            Partition(self, partition, construct_only=True)
+            for partition in partition_strs
+        ]
 
     def partition(self, partition_name, **kwargs) -> Partition:
         """ Get the existing partition object according to name. Return None if not existed.
@@ -1026,9 +1028,12 @@ class Collection:
         conn = self._get_connection()
         copy_kwargs = copy.deepcopy(kwargs)
         index_name = copy_kwargs.pop("index_name", Config.IndexName)
-        if conn.describe_index(self._name, index_name, timeout=timeout, **copy_kwargs) is None:
-            return False
-        return True
+        return (
+            conn.describe_index(
+                self._name, index_name, timeout=timeout, **copy_kwargs
+            )
+            is not None
+        )
 
     def drop_index(self, timeout=None, **kwargs):
         """ Drop index and its corresponding index files.

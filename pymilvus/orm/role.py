@@ -111,9 +111,7 @@ class Role:
             >>> print(f"users added to the role: {users}")
         """
         roles = self._get_connection().select_one_role(self._name, True)
-        if len(roles.groups) == 0:
-            return []
-        return roles.groups[0].users
+        return [] if len(roles.groups) == 0 else roles.groups[0].users
 
     def is_exist(self):
         """ Check whether the role is existed.

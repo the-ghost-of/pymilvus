@@ -62,7 +62,7 @@ def has_collection(name):
 def drop_collection(name):
     collection = Collection(name)
     collection.drop()
-    print("\nDrop collection: {}".format(name))
+    print(f"\nDrop collection: {name}")
 
 
 # List all collections in Milvus
@@ -73,7 +73,7 @@ def list_collections():
 
 def insert(collection, num, dim):
     data = [
-        [i for i in range(num)],
+        list(range(num)),
         [[random.random() for _ in range(dim)] for _ in range(num)],
     ]
     collection.insert(data)
@@ -91,7 +91,7 @@ def create_index(collection, filed_name):
         "params": {"nlist": _NLIST},
         "metric_type": _METRIC_TYPE}
     collection.create_index(filed_name, index_param)
-    print("\nCreated index:\n{}".format(collection.index().params))
+    print(f"\nCreated index:\n{collection.index().params}")
 
 
 def drop_index(collection):
@@ -116,9 +116,9 @@ def search(collection, vector_field, id_field, search_vectors):
         "expr": "id_field >= 0"}
     results = collection.search(**search_param)
     for i, result in enumerate(results):
-        print("\nSearch result for {}th vector: ".format(i))
+        print(f"\nSearch result for {i}th vector: ")
         for j, res in enumerate(result):
-            print("Top {}: {}".format(j, res))
+            print(f"Top {j}: {res}")
 
 
 def set_properties(collection):

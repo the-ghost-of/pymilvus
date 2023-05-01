@@ -133,13 +133,12 @@ class Index:
         """
         Put collection name, field name and index params into dict.
         """
-        _dict = {
+        return {
             "collection": self._collection._name,
             "field": self._field_name,
             "index_name": self._index_name,
-            "index_param": self.params
+            "index_param": self.params,
         }
-        return _dict
 
     def drop(self, timeout=None, **kwargs):
         """
